@@ -1,70 +1,57 @@
-import { SubmitHandler, useForm } from "react-hook-form";
 import { useLoginMutation } from "../redux/features/auth/authApi";
-import { useDispatch } from "react-redux";
+
 import { setUser, TUser } from "../redux/features/auth/authSlice";
 import { verifyToken } from "../utils/verifyToken";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-type Inputs = {
-  id: string;
-  password: string;
-};
+import UniversityForm from "../components/form/UniversityForm";
+import UniversityInput from "../components/form/UniversityInput";
+import { Button, Row } from "antd";
+import { useAppDispatch } from "../redux/hooks";
+import { FieldValues } from "react-hook-form";
 
 const Login = () => {
-  const {
-    register,
-    handleSubmit,
-
-    formState: { errors },
-  } = useForm<Inputs>();
-  const dispatch = useDispatch();
-
-  const [login, { error }] = useLoginMutation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    const toastId = toast.loading("Logging in!");
+  const defaultValues = {
+    userId: "0001",
+    password: "admin12345",
+  };
+
+  const [login] = useLoginMutation();
+
+  const onSubmit = async (data: FieldValues) => {
+    console.log(data);
+    const toastId = toast.loading("Logging in");
+
     try {
       const userInfo = {
-        id: data.id,
+        id: data.userId,
         password: data.password,
       };
       const res = await login(userInfo).unwrap();
       const user = verifyToken(res.data.accessToken) as TUser;
-
       dispatch(setUser({ user: user, token: res.data.accessToken }));
-      toast.success("Logged in successfully!", { id: toastId, duration: 2000 });
-      if (user.role === "superAdmin") {
-        navigate(`/admin/dashboard`);
+      toast.success("Logged in", { id: toastId, duration: 2000 });
+      if (user?.role == "superAdmin") {
+        navigate("/");
+      } else {
+        navigate(`/${user.role}/dashboard`);
       }
-      navigate(`/${user.role}/dashboard`);
-    } catch (error) {
+    } catch (err) {
       toast.error("Something went wrong", { id: toastId, duration: 2000 });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div>
-        <label htmlFor="id">ID: </label>
-        <input {...register("id")} id="id" />
-
-        {errors.id && <span>This field is required</span>}
-      </div>
-
-      <div>
-        <label htmlFor="password">Password </label>
-        <input
-          type="password"
-          id="password"
-          {...register("password", { required: true })}
-        />
-        {errors.password && <span>This field is required</span>}
-      </div>
-
-      <input type="submit" />
-    </form>
+    <Row justify="center" align="middle" style={{ height: "100vh" }}>
+      <UniversityForm onSubmit={onSubmit} defaultValues={defaultValues}>
+        <UniversityInput type="text" name="userId" label="ID:" />
+        <UniversityInput type="text" name="password" label="Password" />
+        <Button htmlType="submit">Login</Button>
+      </UniversityForm>
+    </Row>
   );
 };
 
