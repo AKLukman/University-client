@@ -43,7 +43,9 @@ const CreateAacademicSemester = () => {
 
     const toastId = toast.loading("Creating...");
     try {
-      const res = (await createAacademicSemester(semesterData)) as TResponse;
+      const res = (await createAacademicSemester(
+        semesterData
+      )) as TResponse<string>;
       if (res.error) {
         toast.error(res?.error?.data.message, { id: toastId });
       } else {
